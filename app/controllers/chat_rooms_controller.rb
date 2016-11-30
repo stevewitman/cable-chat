@@ -1,4 +1,8 @@
 class ChatRoomsController < ApplicationController
+  def show
+    @chat_room = ChatRoom.includes(:messages).find_by(id: params[:id])
+  end
+
   def index
     @chat_rooms = ChatRoom.all
   end

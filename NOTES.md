@@ -103,3 +103,93 @@ end
   <%= f.submit "Add!", class: 'btn btn-primary' %>
 <% end %>
 ```
+# >> Add messages
+```
+rails g model Message body:text user:references chat_room:references
+
+rails db:migrate
+```
+*models/chat_room.rb*
+
+```ruby
+has_many :messages, dependent: :destroy
+```
+*models/users.rb*
+
+```ruby
+has_many :messages, dependent: :destroy
+```
+*models/message.rb*
+```ruby
+belongs_to :user
+belongs_to :chat_room
+```
+*chat_room_controller.rb*
+```ruby
+def show
+  @chat_room = ChatRoom.includes(:messages).find_by(id: params[:id])
+end
+```
+*views/chat_rooms/show.html.erb*
+```ruby
+<h1><%= @chat_room.title %></h1>
+
+<div id="messages">
+  <%= render @chat_room.messages %>
+</div>
+```
+*views/messages/_message.html.erb*
+```ruby
+<div class="card">
+  <div class="card-block">
+    <div class="row">
+      <div class="col-md-1">
+        <%= gravatar_for message.user %>
+      </div>
+      <div class="col-md-11">
+        <p class="card-text">
+          <span class="text-muted"><%= message.user.name %> at <%= message.timestamp %> says</span><br>
+          <%= message.body %>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+```
+*models/user.rb*
+```ruby
+def name
+  email.split('@')[0]
+end
+```
+*models/message.rb*
+```ruby
+def timestamp
+  created_at.strftime('%H:%M:%S %d %B %Y')
+end
+```
+*application_helper.rb*
+```ruby
+module ApplicationHelper
+  def gravatar_for(user, opts = {})
+    opts[:alt] = user.name
+    image_tag "https://www.gravatar.com/avatar/#{Digest::MD5.hexdigest(user.email)}?s=#{opts.delete(:size) { 40 }}",
+              opts
+  end
+end
+```
+*application.css.scss*
+```css
+#messages {
+  max-height: 450px;
+  overflow-y: auto;
+  .avatar {
+    margin: 0.5rem;
+  }
+}
+```
+*config/routes.rb*
+```ruby
+resources :chat_rooms, only: [:new, :create, :show, :index]
+root 'chat_rooms#index'
+```
